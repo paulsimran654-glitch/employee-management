@@ -48,7 +48,7 @@ const markAbsent = async () => {
       await record.save();
     }
 
-    console.log("✅ Absent marked successfully at 9:31");
+    console.log(`✅ Absent marked successfully at ${now.format("HH:mm")}`);
 
   } catch (err) {
     console.error("❌ Error in markAbsent:", err.message);
@@ -56,47 +56,41 @@ const markAbsent = async () => {
 };
 
 // =======================
-// CRON JOBS (REAL SYSTEM)
+// CRON JOBS (DYNAMIC FROM DB)
 // =======================
 
-cron.schedule("31 9 * * *", markAbsent);
+const AdminSettings = require("../models/AdminSettings");
 
-cron.schedule("45 8 * * *", () => {
-  const now = moment().tz("Asia/Kolkata");
+cron.schedule("* * * * *", async () => {
+  try {
+    const now = moment().tz("Asia/Kolkata");
+    
+    // Only run on weekdays
+    if (now.isoWeekday() > 5) return;
 
-  if (now.isoWeekday() > 5) return;
+    const settings = await AdminSettings.findOne({ settingKey: "attendance_times" });
+    if (!settings) return;
 
-  setQR({
-    type: "attendance",
-    mode: "checkin",
-    date: now.format("YYYY-MM-DD")
-  });
+    const currentMinutes = now.hours() * 60 + now.minutes();
+    
+    const formatTime = (mins) => {
+      const h = Math.floor(mins / 60);
+      const m = mins % 60;
+      return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    };
+    
+    console.log(`⏱️  [Cron check] Current time: ${now.format("HH:mm")} (${currentMinutes} mins). DB checkinEnd: ${formatTime(settings.checkinEnd)} (${settings.checkinEnd} mins)`);
 
-  console.log("🟢 Check-in QR ACTIVE (8:45 - 9:30)");
-});
 
-cron.schedule("31 9 * * *", () => {
-  clearQR();
-  console.log("⛔ Check-in QR cleared");
-});
-
-cron.schedule("45 16 * * *", () => {
-  const now = moment().tz("Asia/Kolkata");
-
-  if (now.isoWeekday() > 5) return;
-
-  setQR({
-    type: "attendance",
-    mode: "checkout",
-    date: now.format("YYYY-MM-DD")
-  });
-
-  console.log("🔵 Check-out QR ACTIVE (4:45 - 5:30)");
-});
-
-cron.schedule("31 17 * * *", () => {
-  clearQR();
-  console.log("⛔ Check-out QR cleared");
+    // Trigger absent marking exactly 1 minute after checkinEnd
+    if (currentMinutes === settings.checkinEnd + 1) {
+      console.log(`⏰ Triggering markAbsent at dynamic checkinEnd + 1 (${currentMinutes} mins)`);
+      await markAbsent();
+      console.log(`✅ markAbsent routine completed at ${now.format("HH:mm")}`);
+    }
+  } catch (err) {
+    console.error("Cron Job Error:", err.message);
+  }
 });
 
 
