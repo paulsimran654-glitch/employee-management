@@ -38,7 +38,7 @@ const Hero = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-[80vh] flex flex-col justify-center items-center text-center text-white px-4 bg-gradient-to-br from-[#0f172a] via-[#1e293b] to-[#334155]">
+    <div className="min-h-[80vh] flex flex-col justify-center items-center text-center text-white px-4 bg-linear-to-br from-[#0f172a] via-[#1e293b] to-[#334155]">
       <div className="mt-20">
         <div className="inline-block mb-4 px-4 py-1 text-sm bg-white/10 rounded-full border border-white/20">
           QR Attendance System
@@ -88,7 +88,7 @@ const FeatureCard = ({ icon, title, desc }) => {
 
 const Features = () => {
   return (
-    <div className="py-14 bg-gradient-to-b from-[#f1f5f9] to-[#e2e8f0] px-6">
+    <div className="py-14 bg-linear-to-b from-[#f1f5f9] to-[#e2e8f0] px-6">
       <h2 className="text-center text-2xl font-bold mb-10 text-[#0f172a]">
         Key Features
       </h2>
