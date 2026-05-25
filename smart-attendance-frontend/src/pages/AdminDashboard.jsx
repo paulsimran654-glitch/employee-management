@@ -252,7 +252,7 @@ const AdminDashboard = () => {
           <div className="bg-white rounded-xl shadow p-6">
 
             <h3 className="font-semibold mb-4">
-              ⚠️ High Risk Employees
+              ⚠️ Irregular Attendance
             </h3>
 
             {predictions.length > 0 ? predictions.map((emp, i) => (
@@ -274,7 +274,7 @@ const AdminDashboard = () => {
 
             )) : (
               <p className="text-sm text-gray-500">
-                No high-risk employees
+                No irregular attendance
               </p>
             )}
 

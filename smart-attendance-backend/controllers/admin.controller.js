@@ -149,7 +149,7 @@ exports.getAllAttendance = async (req, res) => {
   try {
 
     const records = await Attendance.find()
-      .populate("employee", "name department")
+      .populate("employee", "name employeeId email department")
       .sort({ createdAt: -1 });
 
     res.json(records);

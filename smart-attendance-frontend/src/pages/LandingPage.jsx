@@ -1,5 +1,5 @@
 import React from "react";
-import { Shield, BarChart3, Clock, ScanFace, QrCode } from "lucide-react";
+import { Activity, MapPin, ShieldCheck, ScanFace, QrCode } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const Navbar = () => {
@@ -41,7 +41,7 @@ const Hero = () => {
     <div className="min-h-[80vh] flex flex-col justify-center items-center text-center text-white px-4 bg-gradient-to-br from-[#0f172a] via-[#1e293b] to-[#334155]">
       <div className="mt-20">
         <div className="inline-block mb-4 px-4 py-1 text-sm bg-white/10 rounded-full border border-white/20">
-          Smart Attendance System
+          QR Attendance System
         </div>
 
         <h1 className="text-5xl md:text-6xl font-bold mb-4">
@@ -49,8 +49,8 @@ const Hero = () => {
         </h1>
 
         <p className="max-w-2xl mx-auto text-gray-300 mb-6">
-          Revolutionize your workplace attendance with AI-powered face recognition,
-          real-time tracking, and powerful analytics.
+          Secure, smart, and reliable attendance tracking using QR, geo-location,
+          and anti-proxy validation.
         </p>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
@@ -95,27 +95,27 @@ const Features = () => {
 
       <div className="max-w-6xl mx-auto grid md:grid-cols-4 gap-6">
         <FeatureCard
-          icon={<ScanFace />}
-          title="Face Recognition"
-          desc="AI-powered facial recognition for seamless check-in and check-out."
+          icon={<ShieldCheck />}
+          title="Anti-Proxy Detection"
+          desc="Prevent fake attendance using live face validation and anti-spoof detection."
         />
 
         <FeatureCard
-          icon={<Clock />}
-          title="Real-Time Tracking"
-          desc="Monitor attendance in real time with instant notifications."
+          icon={<QrCode />}
+          title="QR-Based Attendance"
+          desc="Employees scan dynamic QR codes for fast and secure attendance marking."
         />
 
         <FeatureCard
-          icon={<BarChart3 />}
-          title="Analytics"
-          desc="Comprehensive reports and insights to optimize workforce management."
+          icon={<MapPin />}
+          title="Geo-Location Verification"
+          desc="Ensure employees are within office premises using location-based validation."
         />
 
         <FeatureCard
-          icon={<Shield />}
-          title="Secure & Reliable"
-          desc="Enterprise-grade security with encrypted data storage."
+          icon={<Activity />}
+          title="Real-Time Dashboard"
+          desc="Monitor attendance data live with instant updates and actionable insights."
         />
       </div>
     </div>
