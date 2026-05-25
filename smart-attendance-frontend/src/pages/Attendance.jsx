@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { Pencil, Eye } from "lucide-react";
+import { Pencil, Eye, Search } from "lucide-react";
 import { API_ENDPOINTS } from "../config/api";
 
 export default function Attendance() {
@@ -13,14 +13,15 @@ export default function Attendance() {
 
   const [showReasonId, setShowReasonId] = useState(null);
 
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedDepartment, setSelectedDepartment] = useState("");
+  const [selectedStatus, setSelectedStatus] = useState("");
+  const [selectedDate, setSelectedDate] = useState("");
+
   const [currentPage, setCurrentPage] = useState(1);
   const recordsPerPage = 8;
 
-  useEffect(() => {
-    fetchAttendance();
-  }, []);
-
-  const fetchAttendance = async () => {
+  async function fetchAttendance() {
     try {
       const res = await axios.get(
         API_ENDPOINTS.ADMIN_ATTENDANCE,
@@ -30,7 +31,16 @@ export default function Attendance() {
     } catch (err) {
       console.error("Error fetching attendance", err);
     }
-  };
+  }
+
+  useEffect(() => {
+    axios.get(
+      API_ENDPOINTS.ADMIN_ATTENDANCE,
+      { withCredentials: true }
+    )
+      .then((res) => setRecords(res.data))
+      .catch((err) => console.error("Error fetching attendance", err));
+  }, []);
 
   const handleUpdate = async (item) => {
 
@@ -108,10 +118,45 @@ export default function Attendance() {
     return isToday || diffDays <= 2;
   };
 
+  const getDateKey = (date) => {
+    if (!date) return "";
+    return new Date(date).toISOString().slice(0, 10);
+  };
+
+  const departments = Array.from(
+    new Set(
+      records
+        .map((item) => item.employee?.department)
+        .filter(Boolean)
+    )
+  ).sort();
+
+  const filteredRecords = records.filter((item) => {
+    const employee = item.employee || {};
+    const search = searchTerm.trim().toLowerCase();
+
+    const matchesSearch =
+      !search ||
+      employee.name?.toLowerCase().includes(search) ||
+      employee.employeeId?.toLowerCase().includes(search) ||
+      employee.email?.toLowerCase().includes(search);
+
+    const matchesDepartment =
+      !selectedDepartment || employee.department === selectedDepartment;
+
+    const matchesStatus =
+      !selectedStatus || item.status === selectedStatus;
+
+    const matchesDate =
+      !selectedDate || getDateKey(item.date) === selectedDate;
+
+    return matchesSearch && matchesDepartment && matchesStatus && matchesDate;
+  });
+
   // ================= PAGINATION =================
-  const totalPages = Math.ceil(records.length / recordsPerPage);
+  const totalPages = Math.ceil(filteredRecords.length / recordsPerPage);
   const startIndex = (currentPage - 1) * recordsPerPage;
-  const currentRecords = records.slice(startIndex, startIndex + recordsPerPage);
+  const currentRecords = filteredRecords.slice(startIndex, startIndex + recordsPerPage);
 
   const getPagination = () => {
     const pages = [];
@@ -140,7 +185,66 @@ export default function Attendance() {
 
       <div className="max-w-6xl mx-auto">
         <h1 className="text-2xl font-bold">Attendance Records</h1>
-        <p className="text-gray-500 text-sm">{records.length} records</p>
+        <p className="text-gray-500 text-sm">{filteredRecords.length} records</p>
+      </div>
+
+      <div className="max-w-6xl mx-auto bg-white p-4 rounded-lg shadow-md">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="relative md:col-span-2">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+            <input
+              type="text"
+              placeholder="Search by name, employee ID, or email..."
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+
+          <select
+            value={selectedDepartment}
+            onChange={(e) => {
+              setSelectedDepartment(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          >
+            <option value="">All Departments</option>
+            {departments.map((department) => (
+              <option key={department} value={department}>
+                {department}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={selectedStatus}
+            onChange={(e) => {
+              setSelectedStatus(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          >
+            <option value="">All Statuses</option>
+            <option value="present">Present</option>
+            <option value="late">Late</option>
+            <option value="absent">Absent</option>
+            <option value="on-leave">On Leave</option>
+          </select>
+
+          <input
+            type="date"
+            value={selectedDate}
+            onChange={(e) => {
+              setSelectedDate(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent md:col-span-4"
+          />
+        </div>
       </div>
 
       <div className="max-w-6xl mx-auto bg-white rounded-xl shadow overflow-hidden">
@@ -236,6 +340,14 @@ export default function Attendance() {
               ) : null
             )}
 
+            {currentRecords.length === 0 && (
+              <tr>
+                <td colSpan="8" className="p-6 text-center text-gray-500">
+                  No attendance records found
+                </td>
+              </tr>
+            )}
+
           </tbody>
 
         </table>
@@ -243,6 +355,7 @@ export default function Attendance() {
       </div>
 
       {/* ================= PAGINATION UI ================= */}
+      {totalPages > 0 && (
       <div className="flex justify-center items-center gap-2">
 
         <button
@@ -276,6 +389,7 @@ export default function Attendance() {
         </button>
 
       </div>
+      )}
 
     </div>
   );
