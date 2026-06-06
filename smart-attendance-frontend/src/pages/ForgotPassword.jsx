@@ -2,9 +2,9 @@ import { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { API_ENDPOINTS } from "../config/api";
+import { AlertCircle, ArrowLeft, KeyRound, Mail, ShieldCheck } from "lucide-react";
 
 export default function ForgotPassword() {
-
   const navigate = useNavigate();
 
   const [step, setStep] = useState(1);
@@ -16,9 +16,7 @@ export default function ForgotPassword() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // ================= SEND OTP =================
   const sendOtp = async () => {
-
     setMsg("");
     setError("");
 
@@ -27,11 +25,7 @@ export default function ForgotPassword() {
       return;
     }
 
-    // ✅ DOMAIN CHECK (same as login)
-    if (
-      !email.endsWith("*") &&
-      !email.endsWith("@attendify.com")
-    ) {
+    if (!email.endsWith("*") && !email.endsWith("@attendify.com")) {
       setError("Use company email only");
       return;
     }
@@ -39,14 +33,10 @@ export default function ForgotPassword() {
     try {
       setLoading(true);
 
-      const res = await axios.post(
-        API_ENDPOINTS.AUTH_SEND_OTP,
-        { email }
-      );
+      const res = await axios.post(API_ENDPOINTS.AUTH_SEND_OTP, { email });
 
       setMsg(res.data.message);
       setStep(2);
-
     } catch (err) {
       setError(err.response?.data?.message || "Error");
     } finally {
@@ -54,9 +44,7 @@ export default function ForgotPassword() {
     }
   };
 
-  // ================= RESET PASSWORD =================
   const resetPassword = async () => {
-
     setMsg("");
     setError("");
 
@@ -68,22 +56,17 @@ export default function ForgotPassword() {
     try {
       setLoading(true);
 
-      const res = await axios.post(
-        API_ENDPOINTS.AUTH_RESET_PASSWORD,
-        {
-          email,
-          otp,
-          newPassword
-        }
-      );
+      const res = await axios.post(API_ENDPOINTS.AUTH_RESET_PASSWORD, {
+        email,
+        otp,
+        newPassword,
+      });
 
       setMsg(res.data.message);
 
-      // ✅ Redirect after success
       setTimeout(() => {
         navigate("/login");
       }, 1500);
-
     } catch (err) {
       setError(err.response?.data?.message || "Error");
     } finally {
@@ -92,80 +75,109 @@ export default function ForgotPassword() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
+    <div className="app-shell flex min-h-screen items-center justify-center px-4 py-10">
+      <div className="w-full max-w-md">
+        <button
+          type="button"
+          onClick={() => navigate("/login")}
+          className="btn btn-ghost mb-4 pl-0"
+        >
+          <ArrowLeft size={17} />
+          Back to login
+        </button>
 
-      <div className="bg-white p-6 rounded-xl shadow w-96 space-y-4">
+        <div className="glass-panel-strong p-6 sm:p-8">
+          <div className="mb-6 text-center">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-[8px] bg-[#ede9fe] text-[#6d28d9]">
+              <ShieldCheck size={28} />
+            </div>
+            <h1 className="page-title">Reset password</h1>
+            <p className="page-subtitle mt-2">
+              {step === 1 ? "Request a one-time code for your account." : "Enter your code and choose a new password."}
+            </p>
+          </div>
 
-        <h2 className="text-xl font-bold text-center">
-          Forgot Password
-        </h2>
+          <div className="space-y-4">
+            {step === 1 && (
+              <>
+                <label className="block">
+                  <span className="form-label">Company Email</span>
+                  <div className="relative">
+                    <Mail className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#817aa3]" size={18} />
+                    <input
+                      type="email"
+                      placeholder="name@attendify.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="form-field pl-10"
+                    />
+                  </div>
+                </label>
 
-        {/* STEP 1 */}
-        {step === 1 && (
-          <>
-            <input
-              type="email"
-              placeholder="Enter company email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full border p-2 rounded"
-            />
+                <button
+                  type="button"
+                  onClick={sendOtp}
+                  disabled={loading}
+                  className="btn btn-primary w-full"
+                >
+                  {loading ? "Sending..." : "Send OTP"}
+                </button>
+              </>
+            )}
 
-            <button
-              onClick={sendOtp}
-              disabled={loading}
-              className="w-full bg-blue-600 text-white p-2 rounded"
-            >
-              {loading ? "Sending..." : "Send OTP"}
-            </button>
-          </>
-        )}
+            {step === 2 && (
+              <>
+                <label className="block">
+                  <span className="form-label">OTP</span>
+                  <input
+                    type="text"
+                    placeholder="Enter OTP"
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value)}
+                    className="form-field"
+                  />
+                </label>
 
-        {/* STEP 2 */}
-        {step === 2 && (
-          <>
-            <input
-              type="text"
-              placeholder="Enter OTP"
-              value={otp}
-              onChange={(e) => setOtp(e.target.value)}
-              className="w-full border p-2 rounded"
-            />
+                <label className="block">
+                  <span className="form-label">New Password</span>
+                  <div className="relative">
+                    <KeyRound className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#817aa3]" size={18} />
+                    <input
+                      type="password"
+                      placeholder="New password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      className="form-field pl-10"
+                    />
+                  </div>
+                </label>
 
-            <input
-              type="password"
-              placeholder="New Password"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              className="w-full border p-2 rounded"
-            />
+                <button
+                  type="button"
+                  onClick={resetPassword}
+                  disabled={loading}
+                  className="btn btn-primary w-full"
+                >
+                  {loading ? "Updating..." : "Reset Password"}
+                </button>
+              </>
+            )}
 
-            <button
-              onClick={resetPassword}
-              disabled={loading}
-              className="w-full bg-green-600 text-white p-2 rounded"
-            >
-              {loading ? "Updating..." : "Reset Password"}
-            </button>
-          </>
-        )}
+            {msg && (
+              <div className="rounded-[8px] border border-green-200 bg-green-50/80 p-3 text-center text-sm font-semibold text-green-700">
+                {msg}
+              </div>
+            )}
 
-        {/* SUCCESS */}
-        {msg && (
-          <p className="text-sm text-green-600 text-center">
-            {msg}
-          </p>
-        )}
-
-        {/* ERROR */}
-        {error && (
-          <p className="text-sm text-red-500 text-center">
-            {error}
-          </p>
-        )}
-
+            {error && (
+              <div className="flex items-center gap-2 rounded-[8px] border border-red-200 bg-red-50/80 p-3 text-sm font-semibold text-red-700">
+                <AlertCircle size={17} />
+                {error}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
-
     </div>
   );
 }

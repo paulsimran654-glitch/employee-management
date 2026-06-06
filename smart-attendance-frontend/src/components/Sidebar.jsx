@@ -1,7 +1,29 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useContext, useState } from "react";
-import { AuthContext } from "../context/AuthContext";
-import { Menu, X } from "lucide-react";
+import { AuthContext } from "../context/auth-context";
+import {
+  BarChart3,
+  CalendarCheck,
+  ClipboardList,
+  LayoutDashboard,
+  LogOut,
+  Menu,
+  Settings,
+  ShieldCheck,
+  Users,
+  WalletCards,
+  X,
+} from "lucide-react";
+
+const navItems = [
+  { to: "/admin/dashboard", match: "dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/admin/employees", match: "employees", label: "Employees", icon: Users },
+  { to: "/admin/attendance", match: "attendance", label: "Attendance", icon: CalendarCheck },
+  { to: "/admin/leaves", match: "leaves", label: "Leave Management", icon: ClipboardList },
+  { to: "/admin/leave-balance", match: "leave-balance", label: "Leave Balance", icon: WalletCards },
+  { to: "/admin/settings", match: "settings", label: "Settings", icon: Settings },
+  { to: "/admin/reports", match: "reports", label: "Reports", icon: BarChart3 },
+];
 
 export default function Sidebar() {
   const location = useLocation();
@@ -9,112 +31,96 @@ export default function Sidebar() {
   const { user, logout } = useContext(AuthContext);
   const [isOpen, setIsOpen] = useState(false);
 
-  const linkClass = (path) =>
-    `flex items-center gap-3 px-4 py-3 rounded-lg ${
-      location.pathname.includes(path)
-        ? "bg-blue-600"
-        : "hover:bg-blue-800"
-    }`;
-
   const handleLogout = async () => {
     await logout();
     navigate("/login");
   };
 
-  const handleLinkClick = () => {
-    setIsOpen(false); // Close sidebar on mobile after clicking a link
-  };
-
   return (
     <>
-      {/* Mobile Menu Button */}
       <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="lg:hidden fixed top-4 left-4 z-50 bg-[#0f172a] text-white p-2 rounded-lg shadow-lg"
+        type="button"
+        onClick={() => setIsOpen((open) => !open)}
+        className="icon-button fixed left-4 top-4 z-50 lg:hidden"
+        aria-label="Toggle navigation"
       >
-        {isOpen ? <X size={24} /> : <Menu size={24} />}
+        {isOpen ? <X size={20} /> : <Menu size={20} />}
       </button>
 
-      {/* Overlay for mobile */}
       {isOpen && (
-        <div
-          className="lg:hidden fixed inset-0 bg-black/50 z-30"
+        <button
+          type="button"
+          className="fixed inset-0 z-30 bg-[#16123a]/35 lg:hidden"
           onClick={() => setIsOpen(false)}
+          aria-label="Close navigation"
         />
       )}
 
-      {/* Sidebar */}
-      <div
-        className={`fixed lg:static inset-y-0 left-0 z-40 w-64 bg-[#0f172a] text-white flex flex-col justify-between h-screen transform transition-transform duration-300 ease-in-out ${
+      <aside
+        className={`glass-nav fixed inset-y-0 left-0 z-40 flex w-72 flex-col justify-between p-4 transition-transform duration-300 lg:sticky lg:top-4 lg:h-[calc(100vh-2rem)] ${
           isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         }`}
       >
-        {/* TOP SECTION */}
         <div>
-          {/* LOGO */}
-          <div className="text-2xl font-bold p-6 border-b border-gray-700">
-            Attendify
+          <div className="mb-6 flex items-center gap-3 px-2 pt-1">
+            <div className="flex h-11 w-11 items-center justify-center rounded-[8px] bg-white text-[#6d28d9] shadow-[0_12px_30px_rgba(124,58,237,0.18)]">
+              <ShieldCheck size={24} />
+            </div>
+            <div>
+              <p className="text-lg font-black text-[#16123a]">Attendify</p>
+              <p className="text-xs font-semibold text-[#635f86]">Admin workspace</p>
+            </div>
           </div>
 
-          {/* NAV */}
-          <nav className="p-4 space-y-2">
-            <Link to="/admin/dashboard" className={linkClass("dashboard")} onClick={handleLinkClick}>
-              Dashboard
-            </Link>
+          <nav className="space-y-1">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const active = location.pathname.includes(item.match);
 
-            <Link to="/admin/employees" className={linkClass("employees")} onClick={handleLinkClick}>
-              Employees
-            </Link>
-
-            <Link to="/admin/attendance" className={linkClass("attendance")} onClick={handleLinkClick}>
-              Attendance
-            </Link>
-
-            <Link to="/admin/leaves" className={linkClass("leaves")} onClick={handleLinkClick}>
-              Leave Management
-            </Link>
-
-            <Link to="/admin/leave-balance" className={linkClass("leave-balance")} onClick={handleLinkClick}>
-              Leave Balance
-            </Link>
-
-            <Link to="/admin/settings" className={linkClass("settings")} onClick={handleLinkClick}>
-              Settings
-            </Link>
-
-            <Link to="/admin/reports" className={linkClass("reports")} onClick={handleLinkClick}>
-              Reports
-            </Link>
+              return (
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  onClick={() => setIsOpen(false)}
+                  className={`flex items-center gap-3 rounded-[8px] px-3 py-3 text-sm font-bold transition ${
+                    active
+                      ? "bg-[#6d28d9] text-white shadow-[0_12px_28px_rgba(109,40,217,0.24)]"
+                      : "text-[#3b3563] hover:bg-white/70"
+                  }`}
+                >
+                  <Icon size={18} />
+                  <span>{item.label}</span>
+                </Link>
+              );
+            })}
           </nav>
         </div>
 
-        {/* BOTTOM SECTION */}
-        <div className="p-4 border-t border-gray-700">
-          {/* USER INFO */}
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center font-bold">
-              {user?.name ? user.name.charAt(0) : "A"}
+        <div className="rounded-[8px] border border-white/70 bg-white/55 p-3">
+          <div className="mb-3 flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-[8px] bg-[#ede9fe] font-black text-[#5b21b6]">
+              {user?.name ? user.name.charAt(0).toUpperCase() : "A"}
             </div>
-
-            <div>
-              <p className="text-sm font-semibold">
+            <div className="min-w-0">
+              <p className="truncate text-sm font-black text-[#16123a]">
                 {user?.name || "Admin User"}
               </p>
-              <p className="text-xs text-gray-400 capitalize">
+              <p className="text-xs font-semibold capitalize text-[#635f86]">
                 {user?.role || "admin"}
               </p>
             </div>
           </div>
 
-          {/* SIGN OUT */}
           <button
+            type="button"
             onClick={handleLogout}
-            className="w-full text-left px-4 py-2 rounded-lg bg-red-600 hover:bg-red-500 transition"
+            className="btn btn-danger w-full justify-start"
           >
+            <LogOut size={16} />
             Sign Out
           </button>
         </div>
-      </div>
+      </aside>
     </>
   );
 }

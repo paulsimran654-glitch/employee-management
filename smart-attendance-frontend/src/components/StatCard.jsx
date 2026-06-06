@@ -1,25 +1,27 @@
-const StatCard = ({ title, value, subtitle, icon: Icon, color }) => {
+import { createElement } from "react";
+
+const StatCard = ({ title, value, subtitle, icon, color = "bg-[#ede9fe] text-[#6d28d9]" }) => {
   return (
-    <div className="bg-white rounded-xl shadow p-5 flex justify-between items-center">
+    <div className="metric-card flex min-h-[132px] items-center justify-between gap-4">
+      <div className="relative z-10 min-w-0">
+        <p className="text-sm font-bold text-[#635f86]">{title}</p>
 
-      <div>
-        <p className="text-sm text-gray-500">{title}</p>
-
-        <h3 className="text-2xl font-bold mt-1">
+        <h3 className="mt-2 text-3xl font-black tracking-normal text-[#16123a]">
           {value}
         </h3>
 
         {subtitle && (
-          <p className="text-xs text-gray-400 mt-1">
+          <p className="mt-1 text-xs font-semibold text-[#817aa3]">
             {subtitle}
           </p>
         )}
       </div>
 
-      <div className={`p-3 rounded-lg ${color}`}>
-        <Icon size={20} />
-      </div>
-
+      {icon && (
+        <div className={`relative z-10 flex h-12 w-12 items-center justify-center rounded-[8px] ${color}`}>
+          {createElement(icon, { size: 22 })}
+        </div>
+      )}
     </div>
   );
 };

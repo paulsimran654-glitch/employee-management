@@ -1,17 +1,16 @@
 import { useEffect, useState } from "react";
-import { Search, Plus, Pencil, Trash2 } from "lucide-react";
+import { Pencil, Plus, Search, Trash2, Users } from "lucide-react";
 
 import {
-  getEmployees,
   createEmployee,
-  updateEmployee,
   deleteEmployee,
+  getEmployees,
+  updateEmployee,
 } from "../api/employeeApi";
 
 import EmployeeModal from "../components/EmployeeModal";
 
 const Employees = () => {
-
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -47,17 +46,13 @@ const Employees = () => {
       setModalOpen(false);
       setEditingEmployee(null);
       fetchEmployees();
-
     } catch (error) {
       console.error("Save failed", error);
     }
   };
 
   const handleDelete = async (id) => {
-
-    const confirmDelete = window.confirm(
-      "Are you sure you want to delete this employee?"
-    );
+    const confirmDelete = window.confirm("Are you sure you want to delete this employee?");
 
     if (!confirmDelete) return;
 
@@ -70,11 +65,7 @@ const Employees = () => {
   };
 
   const departments = Array.from(
-    new Set(
-      employees
-        .map((emp) => emp.department)
-        .filter(Boolean)
-    )
+    new Set(employees.map((emp) => emp.department).filter(Boolean))
   ).sort();
 
   const filteredEmployees = employees.filter((emp) => {
@@ -94,157 +85,141 @@ const Employees = () => {
 
   return (
     <div className="space-y-6">
-
-      <div className="flex justify-between items-center">
-
+      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div>
-          <h2 className="text-2xl font-bold">Employees</h2>
-          <p className="text-gray-500 text-sm">
+          <p className="page-kicker mb-3">
+            <Users size={15} />
+            People
+          </p>
+          <h2 className="page-title">Employees</h2>
+          <p className="page-subtitle mt-2">
             {filteredEmployees.length} total employees
           </p>
         </div>
 
         <button
+          type="button"
           onClick={() => {
             setEditingEmployee(null);
             setModalOpen(true);
           }}
-          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+          className="btn btn-primary"
         >
-          <Plus size={16} />
+          <Plus size={17} />
           Add Employee
         </button>
-
       </div>
 
-      <div className="bg-white p-4 rounded-lg shadow-md">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <section className="glass-panel-strong p-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <div className="relative md:col-span-2">
+            <Search
+              size={19}
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#817aa3]"
+            />
 
-        <div className="relative md:col-span-2">
+            <input
+              type="text"
+              placeholder="Search by name, employee ID, or email..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="form-field pl-10"
+            />
+          </div>
 
-          <Search
-            size={20}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-          />
-
-          <input
-            type="text"
-            placeholder="Search by name, employee ID, or email..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full border border-gray-300 rounded-lg pl-10 pr-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
-
-        </div>
-
-        <select
-          value={selectedDepartment}
-          onChange={(e) => setSelectedDepartment(e.target.value)}
-          className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-        >
-          <option value="">All Departments</option>
-          {departments.map((department) => (
-            <option key={department} value={department}>
-              {department}
-            </option>
-          ))}
-        </select>
-
-        </div>
-      </div>
-
-      <div className="bg-white shadow rounded-xl overflow-hidden">
-
-        <table className="w-full text-sm">
-
-          <thead className="bg-gray-100 text-gray-600">
-            <tr>
-              <th className="text-left px-6 py-3">Employee</th>
-              <th className="text-left px-6 py-3">ID</th>
-              <th className="text-left px-6 py-3">Department</th>
-              <th className="text-left px-6 py-3">Email</th>
-
-              {/* ✅ NEW COLUMN */}
-              <th className="text-left px-6 py-3">Phone</th>
-
-              <th className="text-right px-6 py-3">Actions</th>
-            </tr>
-          </thead>
-
-          <tbody>
-
-            {loading ? (
-              <tr>
-                <td colSpan="6" className="px-6 py-6 text-center text-gray-500">
-                  Loading employees...
-                </td>
-              </tr>
-            ) : filteredEmployees.length === 0 ? (
-              <tr>
-                <td colSpan="6" className="px-6 py-6 text-center text-gray-500">
-                  No employees found
-                </td>
-              </tr>
-            ) : filteredEmployees.map((emp) => (
-
-              <tr
-                key={emp._id}
-                className="border-t hover:bg-gray-50"
-              >
-
-                <td className="px-6 py-4 font-medium">
-                  {emp.name}
-                </td>
-
-                <td className="px-6 py-4">
-                  <span className="bg-gray-100 px-2 py-1 rounded text-xs">
-                    {emp.employeeId}
-                  </span>
-                </td>
-
-                <td className="px-6 py-4">
-                  {emp.department}
-                </td>
-
-                <td className="px-6 py-4 text-gray-600">
-                  {emp.email}
-                </td>
-
-                {/* ✅ SHOW PHONE */}
-                <td className="px-6 py-4 text-gray-600">
-                  {emp.phone}
-                </td>
-
-                <td className="px-6 py-4 flex justify-end gap-3">
-
-                  <button
-                    onClick={() => {
-                      setEditingEmployee(emp);
-                      setModalOpen(true);
-                    }}
-                    className="text-gray-500 hover:text-black"
-                  >
-                    <Pencil size={16} />
-                  </button>
-
-                  <button
-                    onClick={() => handleDelete(emp._id)}
-                    className="text-red-500 hover:text-red-700"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-
-                </td>
-
-              </tr>
-
+          <select
+            value={selectedDepartment}
+            onChange={(e) => setSelectedDepartment(e.target.value)}
+            className="form-field"
+          >
+            <option value="">All Departments</option>
+            {departments.map((department) => (
+              <option key={department} value={department}>
+                {department}
+              </option>
             ))}
+          </select>
+        </div>
+      </section>
 
-          </tbody>
+      <section className="glass-panel-strong overflow-hidden">
+        <div className="table-wrap">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Employee</th>
+                <th>ID</th>
+                <th>Department</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th className="text-right">Actions</th>
+              </tr>
+            </thead>
 
-        </table>
+            <tbody>
+              {loading ? (
+                <tr>
+                  <td colSpan="6" className="empty-state">
+                    Loading employees...
+                  </td>
+                </tr>
+              ) : filteredEmployees.length === 0 ? (
+                <tr>
+                  <td colSpan="6" className="empty-state">
+                    No employees found
+                  </td>
+                </tr>
+              ) : (
+                filteredEmployees.map((emp) => (
+                  <tr key={emp._id}>
+                    <td>
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-[8px] bg-[#ede9fe] font-black text-[#6d28d9]">
+                          {emp.name?.charAt(0)?.toUpperCase() || "E"}
+                        </div>
+                        <span className="font-black text-[#16123a]">{emp.name}</span>
+                      </div>
+                    </td>
 
-      </div>
+                    <td>
+                      <span className="status-badge status-info">{emp.employeeId}</span>
+                    </td>
+
+                    <td>{emp.department}</td>
+                    <td className="text-[#635f86]">{emp.email}</td>
+                    <td className="text-[#635f86]">{emp.phone}</td>
+
+                    <td>
+                      <div className="flex justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingEmployee(emp);
+                            setModalOpen(true);
+                          }}
+                          className="icon-button"
+                          aria-label={`Edit ${emp.name}`}
+                        >
+                          <Pencil size={16} />
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(emp._id)}
+                          className="icon-button text-red-600"
+                          aria-label={`Delete ${emp.name}`}
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
 
       <EmployeeModal
         isOpen={modalOpen}
@@ -255,7 +230,6 @@ const Employees = () => {
         onSubmit={handleSubmit}
         editingEmployee={editingEmployee}
       />
-
     </div>
   );
 };

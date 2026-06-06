@@ -4,18 +4,18 @@ import { Outlet } from "react-router-dom";
 
 const AdminLayout = () => {
   return (
-    <div className="flex h-screen bg-gray-100">
-      
+    <div className="app-shell flex h-screen overflow-hidden lg:p-4">
       <Sidebar />
 
-      <div className="flex flex-col flex-1 overflow-hidden">
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden lg:ml-4">
         <Topbar />
 
-        <main className="flex-1 p-4 lg:p-6 overflow-y-auto pt-16 lg:pt-6">
-          <Outlet />
+        <main className="flex-1 overflow-y-auto px-4 pb-8 pt-20 lg:px-6 lg:pt-6">
+          <div className="mx-auto max-w-7xl">
+            <Outlet />
+          </div>
         </main>
       </div>
-
     </div>
   );
 };

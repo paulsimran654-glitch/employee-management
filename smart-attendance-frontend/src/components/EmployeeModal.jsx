@@ -1,51 +1,27 @@
-import { useState, useEffect } from "react";
-import { Eye, EyeOff } from "lucide-react";
+import { useState } from "react";
+import { Eye, EyeOff, UserPlus } from "lucide-react";
 
-const EmployeeModal = ({ isOpen, onClose, onSubmit, editingEmployee }) => {
+const getInitialForm = (editingEmployee) => ({
+  name: editingEmployee?.name || "",
+  email: editingEmployee?.email || "",
+  phone: editingEmployee?.phone || "",
+  department: editingEmployee?.department || "",
+  password: "",
+});
+
+const EmployeeModalContent = ({ onClose, onSubmit, editingEmployee }) => {
   const [showPassword, setShowPassword] = useState(false);
+  const [form, setForm] = useState(() => getInitialForm(editingEmployee));
 
-  const [form, setForm] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    department: "",
-    password: ""
-  });
-
-  useEffect(() => {
-    if (editingEmployee) {
-      setForm({
-        name: editingEmployee.name,
-        email: editingEmployee.email,
-        phone: editingEmployee.phone || "",
-        department: editingEmployee.department,
-        password: ""
-      });
-    } else {
-      setForm({
-        name: "",
-        email: "",
-        phone: "",
-        department: "",
-        password: ""
-      });
-    }
-  }, [editingEmployee]);
-
-  if (!isOpen) return null;
-
-  // ✅ UPDATED HANDLE CHANGE (PHONE FIX)
   const handleChange = (e) => {
-
     const { name, value } = e.target;
 
-    // ✅ Allow only digits for phone
     if (name === "phone") {
-      const numericValue = value.replace(/\D/g, ""); // remove letters
+      const numericValue = value.replace(/\D/g, "");
       if (numericValue.length <= 10) {
         setForm({
           ...form,
-          phone: numericValue
+          phone: numericValue,
         });
       }
       return;
@@ -53,15 +29,13 @@ const EmployeeModal = ({ isOpen, onClose, onSubmit, editingEmployee }) => {
 
     setForm({
       ...form,
-      [name]: value
+      [name]: value,
     });
   };
 
-  // ✅ UPDATED SUBMIT (VALIDATION)
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    // STRICT PHONE VALIDATION
     if (!/^[0-9]{10}$/.test(form.phone)) {
       alert("Phone number must be exactly 10 digits");
       return;
@@ -71,112 +45,133 @@ const EmployeeModal = ({ isOpen, onClose, onSubmit, editingEmployee }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
+    <div className="modal-scrim">
+      <div className="modal-card max-w-lg p-6">
+        <div className="mb-5 flex items-center gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-[8px] bg-[#ede9fe] text-[#6d28d9]">
+            <UserPlus size={22} />
+          </div>
+          <div>
+            <h2 className="text-xl font-black text-[#16123a]">
+              {editingEmployee ? "Edit Employee" : "Add Employee"}
+            </h2>
+            <p className="text-sm font-semibold text-[#635f86]">
+              {editingEmployee ? "Update employee details." : "Create a new employee account."}
+            </p>
+          </div>
+        </div>
 
-      <div className="bg-white width:400px rounded-xl shadow-lg p-6">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <label className="block">
+            <span className="form-label">Name</span>
+            <input
+              name="name"
+              placeholder="Employee name"
+              value={form.name}
+              onChange={handleChange}
+              className="form-field"
+              required
+            />
+          </label>
 
-        <h2 className="text-lg font-semibold mb-4">
-          {editingEmployee ? "Edit Employee" : "Add Employee"}
-        </h2>
+          <label className="block">
+            <span className="form-label">Email</span>
+            <input
+              name="email"
+              type="email"
+              placeholder="employee@company.com"
+              value={form.email}
+              onChange={handleChange}
+              className="form-field"
+              required
+            />
+          </label>
 
-        <form onSubmit={handleSubmit} className="space-y-3">
+          <label className="block">
+            <span className="form-label">Phone</span>
+            <input
+              name="phone"
+              placeholder="10 digit phone number"
+              value={form.phone}
+              onChange={handleChange}
+              className="form-field"
+              maxLength={10}
+              inputMode="numeric"
+              required
+            />
+          </label>
 
-          <input
-            name="name"
-            placeholder="Name"
-            value={form.name}
-            onChange={handleChange}
-            className="w-full border rounded-lg p-2"
-            required
-          />
-
-          <input
-            name="email"
-            placeholder="Email"
-            value={form.email}
-            onChange={handleChange}
-            className="w-full border rounded-lg p-2"
-            required
-          />
-
-          {/* ✅ UPDATED PHONE FIELD */}
-          <input
-            name="phone"
-            placeholder="Phone (10 digits)"
-            value={form.phone}
-            onChange={handleChange}
-            className="w-full border rounded-lg p-2"
-            maxLength={10}
-            inputMode="numeric"
-            required
-          />
-
-          <select
-            name="department"
-            value={form.department}
-            onChange={handleChange}
-            className="w-full border rounded-lg p-2"
-            required
-          >
-            <option value="">Select Department</option>
-            <option value="Engineering">Engineering</option>
-            <option value="Design">Design</option>
-            <option value="Marketing">Marketing</option>
-            <option value="HR">HR</option>
-          </select>
+          <label className="block">
+            <span className="form-label">Department</span>
+            <select
+              name="department"
+              value={form.department}
+              onChange={handleChange}
+              className="form-field"
+              required
+            >
+              <option value="">Select Department</option>
+              <option value="Engineering">Engineering</option>
+              <option value="Design">Design</option>
+              <option value="Marketing">Marketing</option>
+              <option value="HR">HR</option>
+            </select>
+          </label>
 
           {!editingEmployee && (
-            <div className="relative">
+            <label className="block">
+              <span className="form-label">Temporary Password</span>
+              <div className="relative">
+                <input
+                  name="password"
+                  placeholder="Password"
+                  type={showPassword ? "text" : "password"}
+                  value={form.password}
+                  onChange={handleChange}
+                  className="form-field pr-12"
+                  required
+                />
 
-              <input
-                name="password"
-                placeholder="Password"
-                type={showPassword ? "text" : "password"}
-                value={form.password}
-                onChange={handleChange}
-                className="w-full border rounded-lg p-2 pr-10"
-                required
-              />
-
-              <button 
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-2.5 text-gray-500"
-              >
-                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
-
-              <p className="text-xs text-gray-500 mt-1">
-                Temporary password for employee login. Change later.
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((show) => !show)}
+                  className="absolute right-2 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-[8px] text-[#635f86] hover:bg-[#ede9fe]"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+              <p className="mt-1 text-xs font-semibold text-[#817aa3]">
+                Temporary password for employee login.
               </p>
-
-            </div>
+            </label>
           )}
 
-          <div className="flex justify-end gap-2 pt-2">
-
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 border rounded-lg"
-            >
+          <div className="flex justify-end gap-3 pt-2">
+            <button type="button" onClick={onClose} className="btn btn-secondary">
               Cancel
             </button>
 
-            <button
-              type="submit"
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg"
-            >
+            <button type="submit" className="btn btn-primary">
               {editingEmployee ? "Update" : "Create"}
             </button>
-
           </div>
-
         </form>
-
       </div>
-
     </div>
+  );
+};
+
+const EmployeeModal = ({ isOpen, onClose, onSubmit, editingEmployee }) => {
+  if (!isOpen) return null;
+
+  return (
+    <EmployeeModalContent
+      key={editingEmployee?._id || "new-employee"}
+      onClose={onClose}
+      onSubmit={onSubmit}
+      editingEmployee={editingEmployee}
+    />
   );
 };
 
