@@ -1,6 +1,7 @@
-import { useState, useContext } from "react";
+import { useContext, useState } from "react";
+import { CalendarDays, Download, FileText, Info, UserRound } from "lucide-react";
 import { generateUserReport } from "../api/reportApi";
-import { AuthContext } from "../context/AuthContext";
+import { AuthContext } from "../context/auth-context";
 
 function MyReport() {
   const { user } = useContext(AuthContext);
@@ -26,154 +27,144 @@ function MyReport() {
     }
   };
 
+  const setMonthPreset = () => {
+    const today = new Date();
+    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+    setStartDate(firstDay.toISOString().split("T")[0]);
+    setEndDate(today.toISOString().split("T")[0]);
+  };
+
+  const setLastMonthPreset = () => {
+    const today = new Date();
+    const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+    const lastMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0);
+    setStartDate(lastMonth.toISOString().split("T")[0]);
+    setEndDate(lastMonthEnd.toISOString().split("T")[0]);
+  };
+
+  const setThreeMonthPreset = () => {
+    const today = new Date();
+    const threeMonthsAgo = new Date(today.getFullYear(), today.getMonth() - 3, 1);
+    setStartDate(threeMonthsAgo.toISOString().split("T")[0]);
+    setEndDate(today.toISOString().split("T")[0]);
+  };
+
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-6">📊 My Attendance Report</h1>
+    <div className="space-y-6">
+      <div>
+        <p className="page-kicker mb-3">
+          <FileText size={15} />
+          Export
+        </p>
+        <h1 className="page-title">My Attendance Report</h1>
+        <p className="page-subtitle mt-2">
+          Download your personal attendance summary as a PDF.
+        </p>
+      </div>
 
-      <div className="bg-white rounded-lg shadow-md p-6 max-w-2xl">
-        {/* User Info */}
-        <div className="mb-6 p-4 bg-gray-50 rounded-md">
-          <h2 className="font-semibold text-gray-700 mb-2">Your Information</h2>
-          <div className="text-sm text-gray-600 space-y-1">
-            <p><strong>Name:</strong> {user?.name}</p>
-            <p><strong>Employee ID:</strong> {user?.employeeId}</p>
-            <p><strong>Department:</strong> {user?.department}</p>
-            <p><strong>Email:</strong> {user?.email}</p>
-          </div>
-        </div>
-
-        {/* Date Range */}
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Select Date Range (Optional)
-          </label>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs text-gray-600 mb-1">Start Date</label>
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,680px)_1fr]">
+        <section className="glass-panel-strong p-6">
+          <div className="mb-6 rounded-[8px] border border-white/70 bg-white/55 p-4">
+            <div className="mb-3 flex items-center gap-2">
+              <UserRound className="text-[#6d28d9]" size={20} />
+              <h2 className="section-title">Your Information</h2>
             </div>
-            <div>
-              <label className="block text-xs text-gray-600 mb-1">End Date</label>
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+            <div className="grid gap-2 text-sm font-semibold text-[#635f86] sm:grid-cols-2">
+              <p><strong className="text-[#16123a]">Name:</strong> {user?.name}</p>
+              <p><strong className="text-[#16123a]">Employee ID:</strong> {user?.employeeId}</p>
+              <p><strong className="text-[#16123a]">Department:</strong> {user?.department}</p>
+              <p><strong className="text-[#16123a]">Email:</strong> {user?.email}</p>
             </div>
           </div>
-          <p className="text-xs text-gray-500 mt-1">
-            Leave empty to download your complete attendance history
-          </p>
-        </div>
 
-        {/* Generate Button */}
-        <button
-          onClick={handleGenerateReport}
-          disabled={loading}
-          className={`w-full py-3 rounded-md text-white font-medium transition-colors ${
-            loading
-              ? "bg-gray-400 cursor-not-allowed"
-              : "bg-blue-600 hover:bg-blue-700"
-          }`}
-        >
-          {loading ? (
-            <span className="flex items-center justify-center">
-              <svg
-                className="animate-spin h-5 w-5 mr-2"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
+          <div className="mb-5">
+            <span className="form-label">Select Date Range (Optional)</span>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="block">
+                <span className="mb-1 block text-xs font-bold text-[#817aa3]">Start Date</span>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="form-field"
+                />
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-xs font-bold text-[#817aa3]">End Date</span>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="form-field"
+                />
+              </label>
+            </div>
+            <p className="mt-2 text-xs font-semibold text-[#817aa3]">
+              Leave empty to download your complete attendance history.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleGenerateReport}
+            disabled={loading}
+            className="btn btn-primary w-full"
+          >
+            <Download size={18} />
+            {loading ? "Generating PDF..." : "Download My Report"}
+          </button>
+
+          <div className="mt-6">
+            <p className="mb-2 flex items-center gap-2 text-sm font-black text-[#16123a]">
+              <CalendarDays size={17} />
+              Quick Presets
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <button type="button" onClick={setMonthPreset} className="btn btn-secondary min-h-9 px-3 py-1 text-sm">
+                This Month
+              </button>
+              <button type="button" onClick={setLastMonthPreset} className="btn btn-secondary min-h-9 px-3 py-1 text-sm">
+                Last Month
+              </button>
+              <button type="button" onClick={setThreeMonthPreset} className="btn btn-secondary min-h-9 px-3 py-1 text-sm">
+                Last 3 Months
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setStartDate("");
+                  setEndDate("");
+                }}
+                className="btn btn-secondary min-h-9 px-3 py-1 text-sm"
               >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                ></circle>
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                ></path>
-              </svg>
-              Generating PDF...
-            </span>
-          ) : (
-            "📥 Download My Report (PDF)"
-          )}
-        </button>
-
-        {/* Info Box */}
-        <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-md">
-          <h3 className="font-semibold text-blue-900 mb-2">📋 Your Report Will Include:</h3>
-          <ul className="text-sm text-blue-800 space-y-1">
-            <li>✓ Your complete attendance summary</li>
-            <li>✓ Total present, absent, and half-day records</li>
-            <li>✓ Total working hours and daily average</li>
-            <li>✓ Detailed check-in and check-out times</li>
-            <li>✓ All approved leave records</li>
-            <li>✓ Late check-in statistics</li>
-            <li>✓ Photo capture status for each attendance</li>
-          </ul>
-        </div>
-
-        {/* Quick Date Presets */}
-        <div className="mt-6">
-          <p className="text-sm font-medium text-gray-700 mb-2">Quick Presets:</p>
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() => {
-                const today = new Date();
-                const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-                setStartDate(firstDay.toISOString().split("T")[0]);
-                setEndDate(today.toISOString().split("T")[0]);
-              }}
-              className="px-3 py-1 text-sm bg-gray-200 hover:bg-gray-300 rounded-md transition-colors"
-            >
-              This Month
-            </button>
-            <button
-              onClick={() => {
-                const today = new Date();
-                const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-                const lastMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0);
-                setStartDate(lastMonth.toISOString().split("T")[0]);
-                setEndDate(lastMonthEnd.toISOString().split("T")[0]);
-              }}
-              className="px-3 py-1 text-sm bg-gray-200 hover:bg-gray-300 rounded-md transition-colors"
-            >
-              Last Month
-            </button>
-            <button
-              onClick={() => {
-                const today = new Date();
-                const threeMonthsAgo = new Date(today.getFullYear(), today.getMonth() - 3, 1);
-                setStartDate(threeMonthsAgo.toISOString().split("T")[0]);
-                setEndDate(today.toISOString().split("T")[0]);
-              }}
-              className="px-3 py-1 text-sm bg-gray-200 hover:bg-gray-300 rounded-md transition-colors"
-            >
-              Last 3 Months
-            </button>
-            <button
-              onClick={() => {
-                setStartDate("");
-                setEndDate("");
-              }}
-              className="px-3 py-1 text-sm bg-gray-200 hover:bg-gray-300 rounded-md transition-colors"
-            >
-              All Time
-            </button>
+                All Time
+              </button>
+            </div>
           </div>
-        </div>
+        </section>
+
+        <aside className="glass-panel-strong p-6">
+          <div className="mb-4 flex items-center gap-2">
+            <Info className="text-[#6d28d9]" size={20} />
+            <h2 className="section-title">Your Report Includes</h2>
+          </div>
+          <ul className="space-y-3">
+            {[
+              "Complete attendance summary",
+              "Present, absent, and half-day records",
+              "Working hours and daily average",
+              "Detailed check-in and check-out times",
+              "Approved leave records",
+              "Late check-in statistics",
+              "Photo capture status",
+            ].map((item) => (
+              <li key={item} className="flex gap-3 rounded-[8px] border border-white/70 bg-white/55 p-3 text-sm font-bold text-[#3b3563]">
+                <span className="mt-1 h-2.5 w-2.5 rounded-full bg-[#7c3aed]" />
+                {item}
+              </li>
+            ))}
+          </ul>
+        </aside>
       </div>
     </div>
   );

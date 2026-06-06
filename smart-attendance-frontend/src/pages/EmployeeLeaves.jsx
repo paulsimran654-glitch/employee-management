@@ -1,6 +1,12 @@
-import { useState, useEffect, useContext } from "react";
-import { applyLeave, getMyLeaves, cancelLeave, getEmployeeLeaveBalance } from "../api/leaveApi";
-import { AuthContext } from "../context/AuthContext";
+import { useContext, useEffect, useState } from "react";
+import { CalendarDays, Plus, WalletCards } from "lucide-react";
+import {
+  applyLeave,
+  cancelLeave,
+  getEmployeeLeaveBalance,
+  getMyLeaves,
+} from "../api/leaveApi";
+import { AuthContext } from "../context/auth-context";
 
 export default function EmployeeLeaves() {
   const { user } = useContext(AuthContext);
@@ -13,15 +19,14 @@ export default function EmployeeLeaves() {
   const [pagination, setPagination] = useState({
     current: 1,
     total: 1,
-    totalRecords: 0
+    totalRecords: 0,
   });
 
-  // Form state
   const [formData, setFormData] = useState({
     leaveType: "sick",
     startDate: "",
     endDate: "",
-    reason: ""
+    reason: "",
   });
 
   const leaveTypes = [
@@ -31,24 +36,23 @@ export default function EmployeeLeaves() {
     { value: "maternity", label: "Maternity Leave" },
     { value: "paternity", label: "Paternity Leave" },
     { value: "emergency", label: "Emergency Leave" },
-    { value: "other", label: "Other" }
+    { value: "other", label: "Other" },
   ];
 
-  const statusColors = {
-    pending: "bg-yellow-100 text-yellow-800",
-    approved: "bg-green-100 text-green-800",
-    rejected: "bg-red-100 text-red-800"
+  const statusClass = {
+    pending: "status-badge status-pending",
+    approved: "status-badge status-approved",
+    rejected: "status-badge status-rejected",
   };
 
-  // Fetch leaves
   const fetchLeaves = async (page = 1) => {
     try {
       setLoading(true);
       const params = {
         page,
-        limit: 10
+        limit: 10,
       };
-      
+
       if (filter !== "all") {
         params.status = filter;
       }
@@ -66,10 +70,9 @@ export default function EmployeeLeaves() {
     }
   };
 
-  // Fetch leave balance
   const fetchLeaveBalance = async () => {
     if (!user?._id) return;
-    
+
     try {
       setBalanceLoading(true);
       const response = await getEmployeeLeaveBalance(user._id);
@@ -86,12 +89,13 @@ export default function EmployeeLeaves() {
   useEffect(() => {
     fetchLeaves();
     fetchLeaveBalance();
+  // Keep the fetch cadence tied to filter/user changes without recreating fetch helpers each render.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filter, user]);
 
-  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!formData.startDate || !formData.endDate || !formData.reason.trim()) {
       alert("Please fill all required fields");
       return;
@@ -105,7 +109,7 @@ export default function EmployeeLeaves() {
     try {
       setLoading(true);
       const response = await applyLeave(formData);
-      
+
       if (response.success) {
         alert("Leave application submitted successfully!");
         setShowApplyForm(false);
@@ -113,29 +117,27 @@ export default function EmployeeLeaves() {
           leaveType: "sick",
           startDate: "",
           endDate: "",
-          reason: ""
+          reason: "",
         });
-        fetchLeaves(); // Refresh the list
-        fetchLeaveBalance(); // Refresh leave balance
+        fetchLeaves();
+        fetchLeaveBalance();
       }
     } catch (error) {
       console.error("Error applying leave:", error);
       const errorMessage = error.response?.data?.message || "Failed to submit leave application";
-      
-      // Show detailed error message
+
       if (errorMessage.includes("already marked attendance")) {
-        alert(`❌ ${errorMessage}\n\nYou cannot apply for leave on dates where you have already marked attendance.`);
+        alert(`${errorMessage}\n\nYou cannot apply for leave on dates where you have already marked attendance.`);
       } else if (errorMessage.includes("overlapping")) {
-        alert(`❌ ${errorMessage}\n\nPlease check your existing leave applications.`);
+        alert(`${errorMessage}\n\nPlease check your existing leave applications.`);
       } else {
-        alert(`❌ ${errorMessage}`);
+        alert(errorMessage);
       }
     } finally {
       setLoading(false);
     }
   };
 
-  // Handle cancel leave
   const handleCancelLeave = async (leaveId) => {
     if (!confirm("Are you sure you want to cancel this leave application?")) {
       return;
@@ -144,36 +146,33 @@ export default function EmployeeLeaves() {
     try {
       setLoading(true);
       const response = await cancelLeave(leaveId);
-      
+
       if (response.success) {
         alert("Leave application cancelled successfully!");
-        fetchLeaves(); // Refresh the list
+        fetchLeaves();
       }
     } catch (error) {
       console.error("Error cancelling leave:", error);
       const errorMessage = error.response?.data?.message || "Failed to cancel leave application";
-      
-      // Show detailed error message
+
       if (errorMessage.includes("attendance records created")) {
-        alert(`❌ ${errorMessage}\n\nYour leave has been approved and attendance records have been created. Please contact admin to cancel.`);
+        alert(`${errorMessage}\n\nYour leave has been approved and attendance records have been created. Please contact admin to cancel.`);
       } else {
-        alert(`❌ ${errorMessage}`);
+        alert(errorMessage);
       }
     } finally {
       setLoading(false);
     }
   };
 
-  // Format date
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString("en-US", {
       year: "numeric",
       month: "short",
-      day: "numeric"
+      day: "numeric",
     });
   };
 
-  // Calculate days between dates
   const calculateDays = (startDate, endDate) => {
     const start = new Date(startDate);
     const end = new Date(endDate);
@@ -182,98 +181,92 @@ export default function EmployeeLeaves() {
   };
 
   return (
-    <div className="p-6">
-      {/* Leave Balance Dashboard */}
-      <div className="mb-8">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">My Leave Balance</h2>
-        
-        {balanceLoading ? (
-          <div className="bg-white rounded-lg shadow p-8 text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-2 text-gray-600">Loading leave balance...</p>
-          </div>
-        ) : leaveBalance ? (
-          <>
-            {/* Detailed Leave Balance - Only Remaining */}
-            <div className="bg-white rounded-lg shadow overflow-hidden">
-              <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900">Available Leaves - Year {leaveBalance.year}</h3>
-              </div>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-4 p-6">
-                {Object.entries(leaveBalance.leaveBalance).map(([type, balance]) => {
-                  const getColorClass = () => {
-                    if (balance.remaining === 0) return 'text-red-600 bg-red-50 border-red-200';
-                    if (balance.remaining <= 3) return 'text-orange-600 bg-orange-50 border-orange-200';
-                    return 'text-green-600 bg-green-50 border-green-200';
-                  };
-
-                  return (
-                    <div key={type} className={`border-2 rounded-lg p-4 text-center ${getColorClass()}`}>
-                      <h4 className="font-semibold capitalize text-sm mb-2">{type}</h4>
-                      <div className="text-3xl font-bold mb-1">{balance.remaining}</div>
-                      <div className="text-xs font-medium">days left</div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </>
-        ) : (
-          <div className="bg-white rounded-lg shadow p-8 text-center text-gray-500">
-            No leave balance data available
-          </div>
-        )}
+    <div className="space-y-6">
+      <div>
+        <p className="page-kicker mb-3">
+          <WalletCards size={15} />
+          Balance
+        </p>
+        <h1 className="page-title">My Leave Balance</h1>
+        <p className="page-subtitle mt-2">Track available leave and manage applications.</p>
       </div>
 
-      {/* Header */}
-      <div className="flex justify-between items-center mb-6">
+      {balanceLoading ? (
+        <section className="glass-panel-strong p-8 text-center text-sm font-bold text-[#635f86]">
+          Loading leave balance...
+        </section>
+      ) : leaveBalance ? (
+        <section className="glass-panel-strong overflow-hidden">
+          <div className="border-b border-[#7d69be24] px-5 py-4">
+            <h2 className="section-title">Available Leaves - Year {leaveBalance.year}</h2>
+          </div>
+          <div className="grid grid-cols-2 gap-4 p-5 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7">
+            {Object.entries(leaveBalance.leaveBalance).map(([type, balance]) => {
+              const colorClass =
+                balance.remaining === 0
+                  ? "border-red-200 bg-red-50 text-red-700"
+                  : balance.remaining <= 3
+                  ? "border-amber-200 bg-amber-50 text-amber-700"
+                  : "border-green-200 bg-green-50 text-green-700";
+
+              return (
+                <div key={type} className={`rounded-[8px] border p-4 text-center ${colorClass}`}>
+                  <h4 className="mb-2 text-sm font-black capitalize">{type}</h4>
+                  <div className="text-3xl font-black">{balance.remaining}</div>
+                  <div className="text-xs font-bold">days left</div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      ) : (
+        <section className="glass-panel-strong p-8 text-center text-sm font-bold text-[#635f86]">
+          No leave balance data available
+        </section>
+      )}
+
+      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">My Leave Applications</h1>
-          <p className="text-gray-600">Manage your leave requests</p>
+          <p className="page-kicker mb-3">
+            <CalendarDays size={15} />
+            Requests
+          </p>
+          <h2 className="page-title">My Leave Applications</h2>
+          <p className="page-subtitle mt-2">Manage your leave requests.</p>
         </div>
-        <button
-          onClick={() => setShowApplyForm(true)}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
-        >
+        <button type="button" onClick={() => setShowApplyForm(true)} className="btn btn-primary">
+          <Plus size={17} />
           Apply for Leave
         </button>
       </div>
 
-      {/* Filters */}
-      <div className="mb-6">
-        <div className="flex gap-2">
-          {["all", "pending", "approved", "rejected"].map((status) => (
-            <button
-              key={status}
-              onClick={() => setFilter(status)}
-              className={`px-4 py-2 rounded-lg capitalize transition ${
-                filter === status
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-              }`}
-            >
-              {status === "all" ? "All Leaves" : status}
-            </button>
-          ))}
-        </div>
+      <div className="flex flex-wrap gap-2">
+        {["all", "pending", "approved", "rejected"].map((status) => (
+          <button
+            key={status}
+            type="button"
+            onClick={() => setFilter(status)}
+            className={`btn min-h-10 px-4 py-2 capitalize ${
+              filter === status ? "btn-primary" : "btn-secondary"
+            }`}
+          >
+            {status === "all" ? "All Leaves" : status}
+          </button>
+        ))}
       </div>
 
-      {/* Apply Leave Modal */}
       {showApplyForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h2 className="text-xl font-bold mb-4">Apply for Leave</h2>
-            
+        <div className="modal-scrim">
+          <div className="modal-card max-w-md p-6">
+            <h2 className="mb-5 text-2xl font-black text-[#16123a]">Apply for Leave</h2>
+
             <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Leave Type */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Leave Type *
-                </label>
+              <label className="block">
+                <span className="form-label">Leave Type *</span>
                 <select
                   value={formData.leaveType}
                   onChange={(e) => setFormData({ ...formData, leaveType: e.target.value })}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="form-field"
                   required
                 >
                   {leaveTypes.map((type) => (
@@ -283,86 +276,64 @@ export default function EmployeeLeaves() {
                   ))}
                 </select>
                 {leaveBalance && leaveBalance.leaveBalance[formData.leaveType] && (
-                  <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-sm">
-                    <span className="font-medium text-blue-900">Available: </span>
-                    <span className="text-blue-700">
-                      {leaveBalance.leaveBalance[formData.leaveType].remaining} days remaining
-                    </span>
+                  <div className="mt-2 rounded-[8px] border border-blue-200 bg-blue-50 p-2 text-sm font-semibold text-blue-800">
+                    Available: {leaveBalance.leaveBalance[formData.leaveType].remaining} days remaining
                   </div>
                 )}
-              </div>
+              </label>
 
-              {/* Start Date */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Start Date *
-                </label>
+              <label className="block">
+                <span className="form-label">Start Date *</span>
                 <input
                   type="date"
                   value={formData.startDate}
                   onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                  min={new Date().toISOString().split('T')[0]}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  min={new Date().toISOString().split("T")[0]}
+                  className="form-field"
                   required
                 />
-              </div>
+              </label>
 
-              {/* End Date */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  End Date *
-                </label>
+              <label className="block">
+                <span className="form-label">End Date *</span>
                 <input
                   type="date"
                   value={formData.endDate}
                   onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                  min={formData.startDate || new Date().toISOString().split('T')[0]}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  min={formData.startDate || new Date().toISOString().split("T")[0]}
+                  className="form-field"
                   required
                 />
-              </div>
+              </label>
 
-              {/* Days Calculation */}
               {formData.startDate && formData.endDate && (
-                <div className="text-sm text-gray-600">
+                <div className="rounded-[8px] border border-[#7d69be2e] bg-white/55 p-3 text-sm font-bold text-[#635f86]">
                   Total Days: {calculateDays(formData.startDate, formData.endDate)}
                 </div>
               )}
 
-              {/* Reason */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Reason *
-                </label>
+              <label className="block">
+                <span className="form-label">Reason *</span>
                 <textarea
                   value={formData.reason}
                   onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
                   placeholder="Please provide reason for leave..."
                   rows={3}
                   maxLength={500}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="form-field"
                   required
                 />
-                <div className="text-xs text-gray-500 mt-1">
+                <div className="mt-1 text-xs font-semibold text-[#817aa3]">
                   {formData.reason.length}/500 characters
                 </div>
-              </div>
+              </label>
 
-              {/* Buttons */}
-              <div className="flex gap-3 pt-4">
-                <button
-                  type="button"
-                  onClick={() => setShowApplyForm(false)}
-                  className="flex-1 bg-gray-300 text-gray-700 py-2 rounded-lg hover:bg-gray-400 transition"
-                >
+              <div className="flex gap-3 pt-2">
+                <button type="button" onClick={() => setShowApplyForm(false)} className="btn btn-secondary flex-1">
                   Cancel
                 </button>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
-                >
-                  {loading ? "Submitting..." : "Submit Application"}
+                <button type="submit" disabled={loading} className="btn btn-primary flex-1">
+                  {loading ? "Submitting..." : "Submit"}
                 </button>
               </div>
             </form>
@@ -370,78 +341,49 @@ export default function EmployeeLeaves() {
         </div>
       )}
 
-      {/* Leave Applications List */}
-      <div className="bg-white rounded-lg shadow">
+      <section className="glass-panel-strong overflow-hidden">
         {loading ? (
-          <div className="p-8 text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-2 text-gray-600">Loading...</p>
-          </div>
+          <div className="empty-state">Loading...</div>
         ) : leaves.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">
-            No leave applications found
-          </div>
+          <div className="empty-state">No leave applications found</div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50">
+          <div className="table-wrap">
+            <table className="data-table">
+              <thead>
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Leave Type
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Dates
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Days
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Applied Date
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
+                  <th>Leave Type</th>
+                  <th>Dates</th>
+                  <th>Days</th>
+                  <th>Status</th>
+                  <th>Applied Date</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody>
                 {leaves.map((leave) => (
-                  <tr key={leave._id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900 capitalize">
-                        {leave.leaveType}
-                      </div>
-                      <div className="text-sm text-gray-500 truncate max-w-xs">
-                        {leave.reason}
-                      </div>
+                  <tr key={leave._id}>
+                    <td>
+                      <div className="font-black capitalize text-[#16123a]">{leave.leaveType}</div>
+                      <div className="max-w-xs truncate text-sm font-semibold text-[#635f86]">{leave.reason}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {formatDate(leave.startDate)} - {formatDate(leave.endDate)}
+                    <td>{formatDate(leave.startDate)} - {formatDate(leave.endDate)}</td>
+                    <td>{leave.totalDays}</td>
+                    <td>
+                      <span className={statusClass[leave.status]}>{leave.status}</span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {leave.totalDays}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full capitalize ${statusColors[leave.status]}`}>
-                        {leave.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {formatDate(leave.appliedDate)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <td>{formatDate(leave.appliedDate)}</td>
+                    <td>
                       {leave.status === "pending" && (
                         <button
+                          type="button"
                           onClick={() => handleCancelLeave(leave._id)}
-                          className="text-red-600 hover:text-red-900 transition"
+                          className="btn btn-danger min-h-9 px-3 py-1 text-xs"
                         >
                           Cancel
                         </button>
                       )}
                       {leave.status !== "pending" && leave.adminComments && (
-                        <div className="text-xs text-gray-500">
+                        <div className="text-xs font-semibold text-[#635f86]">
                           Admin: {leave.adminComments}
                         </div>
                       )}
@@ -453,34 +395,35 @@ export default function EmployeeLeaves() {
           </div>
         )}
 
-        {/* Pagination */}
         {pagination.total > 1 && (
-          <div className="px-6 py-3 border-t border-gray-200 flex items-center justify-between">
-            <div className="text-sm text-gray-700">
+          <div className="flex flex-col gap-3 border-t border-[#7d69be24] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="text-sm font-semibold text-[#635f86]">
               Showing {leaves.length} of {pagination.totalRecords} results
             </div>
             <div className="flex gap-2">
               <button
+                type="button"
                 onClick={() => fetchLeaves(pagination.current - 1)}
                 disabled={pagination.current === 1}
-                className="px-3 py-1 border border-gray-300 rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                className="btn btn-secondary min-h-9 px-3 py-1 text-sm"
               >
                 Previous
               </button>
-              <span className="px-3 py-1 text-sm">
+              <span className="px-3 py-2 text-sm font-bold text-[#635f86]">
                 Page {pagination.current} of {pagination.total}
               </span>
               <button
+                type="button"
                 onClick={() => fetchLeaves(pagination.current + 1)}
                 disabled={pagination.current === pagination.total}
-                className="px-3 py-1 border border-gray-300 rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                className="btn btn-secondary min-h-9 px-3 py-1 text-sm"
               >
                 Next
               </button>
             </div>
           </div>
         )}
-      </div>
+      </section>
     </div>
   );
 }

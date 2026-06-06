@@ -2,26 +2,22 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
+import { CalendarDays, ListFilter } from "lucide-react";
 import { API_ENDPOINTS } from "../config/api";
 
 export default function History() {
-
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const [selectedDate, setSelectedDate] = useState("");
   const [showCalendar, setShowCalendar] = useState(false);
 
-  // =======================
-  // FETCH DATA
-  // =======================
   useEffect(() => {
     const fetchHistory = async () => {
       try {
-        const res = await axios.get(
-          API_ENDPOINTS.ATTENDANCE_HISTORY,
-          { withCredentials: true }
-        );
+        const res = await axios.get(API_ENDPOINTS.ATTENDANCE_HISTORY, {
+          withCredentials: true,
+        });
         setRecords(res.data);
       } catch (err) {
         console.error("Error fetching history", err);
@@ -33,44 +29,29 @@ export default function History() {
     fetchHistory();
   }, []);
 
-  // =======================
-  // HOURS
-  // =======================
   const calculateHours = (checkIn, checkOut) => {
     if (!checkIn || !checkOut) return "-";
 
     const [inH, inM] = checkIn.split(":").map(Number);
     const [outH, outM] = checkOut.split(":").map(Number);
+    const diff = outH * 60 + outM - (inH * 60 + inM);
 
-    const diff = (outH * 60 + outM) - (inH * 60 + inM);
     return (diff / 60).toFixed(2) + "h";
   };
 
-  // =======================
-  // STATUS BADGE
-  // =======================
   const getStatusBadge = (status) => {
-    if (status === "present") return "bg-green-100 text-green-600";
-    if (status === "late") return "bg-yellow-100 text-yellow-600";
-    if (status === "absent") return "bg-red-100 text-red-600";
-    if (status === "on-leave") return "bg-blue-100 text-blue-600";
-    return "bg-gray-100 text-gray-600";
+    if (status === "present") return "status-badge status-present";
+    if (status === "late") return "status-badge status-late";
+    if (status === "absent") return "status-badge status-absent";
+    if (status === "on-leave") return "status-badge status-leave";
+    return "status-badge bg-gray-100 text-gray-600";
   };
 
-  // =======================
-  // FILTER
-  // =======================
   const filteredRecords = records.filter((item) => {
     if (!selectedDate) return true;
-
-    return (
-      new Date(item.date).toISOString().slice(0, 10) === selectedDate
-    );
+    return new Date(item.date).toISOString().slice(0, 10) === selectedDate;
   });
 
-  // =======================
-  // CALENDAR COLORS
-  // =======================
   const getTileClass = ({ date, view }) => {
     if (view !== "month") return "";
 
@@ -84,7 +65,6 @@ export default function History() {
     });
 
     if (!record) return "";
-
     if (record.status === "present") return "present-day";
     if (record.status === "absent") return "absent-day";
     if (record.status === "late") return "late-day";
@@ -95,141 +75,116 @@ export default function History() {
 
   return (
     <div className="space-y-6">
-
-      {/* HEADER */}
-      <div className="flex justify-between items-center">
-
+      <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
         <div>
-          <h1 className="text-2xl font-bold">Attendance History</h1>
-          <p className="text-gray-500 text-sm">
-            {filteredRecords.length} records
+          <p className="page-kicker mb-3">
+            <CalendarDays size={15} />
+            Timeline
           </p>
+          <h1 className="page-title">Attendance History</h1>
+          <p className="page-subtitle mt-2">{filteredRecords.length} records</p>
         </div>
 
-        <div className="flex gap-3">
-
-          {/* DATE FILTER */}
+        <div className="flex flex-col gap-3 sm:flex-row">
           <input
             type="date"
-            className="border px-4 py-2 rounded-lg"
+            className="form-field sm:w-48"
             value={selectedDate}
             onChange={(e) => setSelectedDate(e.target.value)}
           />
 
-          {/* TOGGLE */}
           <button
-            onClick={() => setShowCalendar(!showCalendar)}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg"
+            type="button"
+            onClick={() => setShowCalendar((show) => !show)}
+            className="btn btn-primary"
           >
+            <ListFilter size={17} />
             {showCalendar ? "Table View" : "Calendar View"}
           </button>
-
         </div>
-
       </div>
 
-      {/* ================= CALENDAR VIEW ================= */}
       {showCalendar && (
-        <div className="bg-white/40 backdrop-blur-lg rounded-2xl shadow-xl p-10 flex flex-col items-center">
-
-          {/* LEGEND */}
-          <div className="flex justify-center gap-8 mb-6 text-sm font-medium">
-
-            <div className="flex items-center gap-2">
-              <span className="w-3 h-3 bg-green-500 rounded-full"></span>
+        <section className="glass-panel-strong p-5 sm:p-8">
+          <div className="mb-6 flex flex-wrap justify-center gap-3 text-sm font-bold text-[#635f86]">
+            <div className="flex items-center gap-2 rounded-[8px] bg-white/60 px-3 py-2">
+              <span className="h-3 w-3 rounded-full bg-green-500" />
               Present
             </div>
 
-            <div className="flex items-center gap-2">
-              <span className="w-3 h-3 bg-red-500 rounded-full"></span>
+            <div className="flex items-center gap-2 rounded-[8px] bg-white/60 px-3 py-2">
+              <span className="h-3 w-3 rounded-full bg-red-500" />
               Absent
             </div>
 
-            <div className="flex items-center gap-2">
-              <span className="w-3 h-3 bg-yellow-400 rounded-full"></span>
+            <div className="flex items-center gap-2 rounded-[8px] bg-white/60 px-3 py-2">
+              <span className="h-3 w-3 rounded-full bg-amber-400" />
               Late
             </div>
 
-            <div className="flex items-center gap-2">
-              <span className="w-3 h-3 bg-blue-500 rounded-full"></span>
+            <div className="flex items-center gap-2 rounded-[8px] bg-white/60 px-3 py-2">
+              <span className="h-3 w-3 rounded-full bg-blue-500" />
               On Leave
             </div>
-
           </div>
 
-          {/* CALENDAR */}
           <Calendar tileClassName={getTileClass} />
-
-        </div>
+        </section>
       )}
 
-      {/* ================= TABLE VIEW ================= */}
       {!showCalendar && (
-        <div className="bg-white rounded-xl shadow overflow-hidden">
-
+        <section className="glass-panel-strong overflow-hidden">
           {loading ? (
-            <p className="p-4 text-gray-500">Loading...</p>
+            <p className="empty-state">Loading...</p>
           ) : filteredRecords.length === 0 ? (
-            <p className="p-4 text-gray-500">No attendance found</p>
+            <p className="empty-state">No attendance found</p>
           ) : (
-
-            <table className="w-full text-sm">
-
-              <thead className="bg-gray-100 text-gray-600">
-                <tr>
-                  <th className="text-left p-4">Date</th>
-                  <th className="text-left p-4">Check In</th>
-                  <th className="text-left p-4">Check Out</th>
-                  <th className="text-left p-4">Status</th>
-                  <th className="text-left p-4">Hours</th>
-                </tr>
-              </thead>
-
-              <tbody>
-
-                {filteredRecords.map((item, index) => (
-                  <tr key={index} className="border-t">
-
-                    <td className="p-4">
-                      {new Date(item.date).toLocaleDateString("en-IN", {
-                        day: "2-digit",
-                        month: "short",
-                        year: "numeric"
-                      })}
-                    </td>
-
-                    <td className="p-4">{item.checkIn || "-"}</td>
-                    <td className="p-4">{item.checkOut || "-"}</td>
-
-                    <td className="p-4">
-                      <span
-                        className={`text-xs px-3 py-1 rounded-full ${getStatusBadge(item.status)}`}
-                      >
-                        {item.status === "on-leave" ? "On Leave" : item.status}
-                      </span>
-                      {item.reason && (
-                        <div className="text-xs text-gray-500 mt-1">
-                          {item.reason}
-                        </div>
-                      )}
-                    </td>
-
-                    <td className="p-4">
-                      {calculateHours(item.checkIn, item.checkOut)}
-                    </td>
-
+            <div className="table-wrap">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Check In</th>
+                    <th>Check Out</th>
+                    <th>Status</th>
+                    <th>Hours</th>
                   </tr>
-                ))}
+                </thead>
 
-              </tbody>
+                <tbody>
+                  {filteredRecords.map((item, index) => (
+                    <tr key={index}>
+                      <td className="font-black text-[#16123a]">
+                        {new Date(item.date).toLocaleDateString("en-IN", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                        })}
+                      </td>
 
-            </table>
+                      <td>{item.checkIn || "-"}</td>
+                      <td>{item.checkOut || "-"}</td>
 
+                      <td>
+                        <span className={getStatusBadge(item.status)}>
+                          {item.status === "on-leave" ? "On Leave" : item.status}
+                        </span>
+                        {item.reason && (
+                          <div className="mt-1 text-xs font-semibold text-[#817aa3]">
+                            {item.reason}
+                          </div>
+                        )}
+                      </td>
+
+                      <td>{calculateHours(item.checkIn, item.checkOut)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
-
-        </div>
+        </section>
       )}
-
     </div>
   );
 }
