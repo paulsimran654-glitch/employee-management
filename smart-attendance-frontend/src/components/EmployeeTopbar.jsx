@@ -30,7 +30,7 @@ export default function EmployeeTopbar() {
 
       <div className="flex shrink-0 items-center gap-3">
         <div className="hidden items-center gap-2 rounded-[8px] border border-[#7d69be2e] bg-white/55 px-3 py-2 text-xs font-bold text-[#635f86] md:flex">
-          <CalendarDays size={15} />
+          <CalendarDays className="shrink-0" size={15} />
           {new Date().toLocaleDateString("en-IN", {
             day: "2-digit",
             month: "short",
@@ -39,8 +39,8 @@ export default function EmployeeTopbar() {
         </div>
 
         <div className="flex items-center gap-3 rounded-[8px] border border-white/70 bg-white/60 px-2.5 py-2">
-          <div className="flex h-9 w-9 items-center justify-center rounded-[8px] bg-[#ede9fe] font-black text-[#6d28d9]">
-            {user?.name?.charAt(0)?.toUpperCase() || <UserRoundCheck size={18} />}
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[8px] bg-[#ede9fe] font-black text-[#6d28d9]">
+            {user?.name?.charAt(0)?.toUpperCase() || <UserRoundCheck className="shrink-0" size={18} />}
           </div>
           <div className="hidden min-w-0 sm:block">
             <p className="truncate text-sm font-black text-[#16123a]">

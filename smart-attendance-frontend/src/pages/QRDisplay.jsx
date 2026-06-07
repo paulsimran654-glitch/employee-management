@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import axios from "axios";
 import { API_ENDPOINTS } from "../config/api";
 import { Link } from "react-router-dom";
-import { Clock3, Home, QrCode, ShieldCheck } from "lucide-react";
+import { Home, QrCode, ShieldCheck } from "lucide-react";
 
 export default function QRDisplay() {
   const [qrValue, setQrValue] = useState(null);
@@ -67,10 +67,6 @@ export default function QRDisplay() {
               Keep this screen visible for employees to scan and mark attendance securely.
             </p>
 
-            <div className="mt-6 inline-flex items-center gap-2 rounded-[8px] border border-[#7d69be2e] bg-white/60 px-4 py-3 text-sm font-bold text-[#635f86]">
-              <Clock3 size={18} />
-              Refreshes every 5 seconds
-            </div>
           </section>
 
           <section className="glass-panel-strong mx-auto flex w-full max-w-md flex-col items-center p-6 sm:p-8">

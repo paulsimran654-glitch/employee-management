@@ -140,6 +140,17 @@ button:disabled {
   transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease, background 180ms ease;
 }
 
+.btn > svg,
+.flex > svg,
+.inline-flex > svg,
+.page-kicker > svg,
+.glass-nav a > svg,
+.metric-card svg,
+.status-badge > svg {
+  display: block;
+  flex-shrink: 0;
+}
+
 .btn:hover:not(:disabled) {
   transform: translateY(-1px);
 }
@@ -178,15 +189,28 @@ button:disabled {
 
 .icon-button {
   display: inline-flex;
+  flex-shrink: 0;
   width: 2.4rem;
   height: 2.4rem;
+  min-width: 2.4rem;
+  min-height: 2.4rem;
   align-items: center;
   justify-content: center;
   border: 1px solid rgba(124, 58, 237, 0.18);
   border-radius: var(--radius-card);
   color: var(--indigo);
   background: rgba(255, 255, 255, 0.68);
+  line-height: 0;
   transition: transform 180ms ease, background 180ms ease, border-color 180ms ease;
+}
+
+.icon-button > svg,
+.form-field + svg,
+.form-field ~ svg,
+.relative > svg.pointer-events-none,
+.modal-card button > svg {
+  display: block;
+  flex-shrink: 0;
 }
 
 .icon-button:hover {
@@ -205,6 +229,14 @@ button:disabled {
   color: var(--ink);
   outline: none;
   transition: border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
+}
+
+.form-field.pl-10 {
+  padding-left: 2.5rem;
+}
+
+.form-field.pr-12 {
+  padding-right: 3rem;
 }
 
 .form-field::placeholder {
@@ -358,6 +390,21 @@ button:disabled {
 .focus-ring:focus-visible {
   outline: 3px solid rgba(124, 58, 237, 0.2);
   outline-offset: 2px;
+}
+
+.sidebar-toggle {
+  left: 0.85rem;
+  top: 0.85rem;
+}
+
+.sidebar-toggle-open {
+  left: 15.25rem;
+}
+
+@media (min-width: 1024px) {
+  .sidebar-toggle {
+    display: none !important;
+  }
 }
 
 .react-calendar {

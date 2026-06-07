@@ -3,11 +3,119 @@ const Attendance = require("../models/Attendance");
 const User = require("../models/User");
 const Leave = require("../models/Leave");
 
+function parseReportDateRange(startDate, endDate) {
+  const range = {};
+
+  if (startDate) {
+    range.start = new Date(startDate);
+    if (Number.isNaN(range.start.getTime())) {
+      return { error: "Invalid startDate" };
+    }
+  }
+
+  if (endDate) {
+    range.end = new Date(endDate);
+    if (Number.isNaN(range.end.getTime())) {
+      return { error: "Invalid endDate" };
+    }
+    range.end.setHours(23, 59, 59, 999);
+  }
+
+  if (range.start && range.end && range.start > range.end) {
+    return { error: "startDate cannot be after endDate" };
+  }
+
+  return range;
+}
+
+function buildAttendanceDateFilter(range) {
+  const dateFilter = {};
+  if (range.start) dateFilter.$gte = range.start;
+  if (range.end) dateFilter.$lte = range.end;
+
+  return Object.keys(dateFilter).length > 0 ? { date: dateFilter } : {};
+}
+
+function buildLeaveDateFilter(range) {
+  if (range.start && range.end) {
+    return {
+      startDate: { $lte: range.end },
+      endDate: { $gte: range.start }
+    };
+  }
+
+  if (range.start) {
+    return { endDate: { $gte: range.start } };
+  }
+
+  if (range.end) {
+    return { startDate: { $lte: range.end } };
+  }
+
+  return {};
+}
+
+function parseTimeToMinutes(time) {
+  if (typeof time !== "string") return null;
+
+  const match = time.match(/^([01]\d|2[0-3]):([0-5]\d)$/);
+  if (!match) return null;
+
+  return Number(match[1]) * 60 + Number(match[2]);
+}
+
+function formatTime(time) {
+  return parseTimeToMinutes(time) === null ? "-" : time;
+}
+
+function calculateWorkedHours(record) {
+  const checkIn = parseTimeToMinutes(record.checkIn);
+  const checkOut = parseTimeToMinutes(record.checkOut);
+
+  if (checkIn === null || checkOut === null || checkOut <= checkIn) {
+    return null;
+  }
+
+  return (checkOut - checkIn) / 60;
+}
+
+function formatDate(value) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "-" : date.toLocaleDateString();
+}
+
+function safeText(value) {
+  if (value === null || value === undefined || value === "") {
+    return "-";
+  }
+
+  return String(value);
+}
+
+function calculateLeaveDays(leave) {
+  if (Number.isFinite(leave.totalDays)) {
+    return leave.totalDays;
+  }
+
+  const start = new Date(leave.startDate);
+  const end = new Date(leave.endDate);
+
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) {
+    return 0;
+  }
+
+  return Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+}
+
 // ================= GENERATE USER ATTENDANCE REPORT =================
 exports.generateUserReport = async (req, res) => {
   try {
     const { userId } = req.params;
     const { startDate, endDate } = req.query;
+
+    if (req.user.role !== "admin" && req.user.id !== userId) {
+      return res.status(403).json({ message: "Access denied" });
+    }
 
     // Validate user
     const user = await User.findById(userId);
@@ -15,31 +123,22 @@ exports.generateUserReport = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Build date filter
-    const dateFilter = {};
-    if (startDate) dateFilter.$gte = new Date(startDate);
-    if (endDate) {
-      const end = new Date(endDate);
-      end.setHours(23, 59, 59, 999);
-      dateFilter.$lte = end;
+    const dateRange = parseReportDateRange(startDate, endDate);
+    if (dateRange.error) {
+      return res.status(400).json({ message: dateRange.error });
     }
 
     // Fetch attendance records
     const attendanceRecords = await Attendance.find({
       employee: userId,
-      ...(Object.keys(dateFilter).length > 0 && { date: dateFilter })
+      ...buildAttendanceDateFilter(dateRange)
     }).sort({ date: -1 });
 
     // Fetch leave records
     const leaveRecords = await Leave.find({
       employee: userId,
       status: "approved",
-      ...(Object.keys(dateFilter).length > 0 && {
-        $or: [
-          { startDate: dateFilter },
-          { endDate: dateFilter }
-        ]
-      })
+      ...buildLeaveDateFilter(dateRange)
     }).sort({ startDate: -1 });
 
     // Calculate statistics
@@ -75,13 +174,9 @@ exports.generateAdminReport = async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
 
-    // Build date filter
-    const dateFilter = {};
-    if (startDate) dateFilter.$gte = new Date(startDate);
-    if (endDate) {
-      const end = new Date(endDate);
-      end.setHours(23, 59, 59, 999);
-      dateFilter.$lte = end;
+    const dateRange = parseReportDateRange(startDate, endDate);
+    if (dateRange.error) {
+      return res.status(400).json({ message: dateRange.error });
     }
 
     // Fetch all employees
@@ -89,18 +184,13 @@ exports.generateAdminReport = async (req, res) => {
 
     // Fetch all attendance records
     const attendanceRecords = await Attendance.find({
-      ...(Object.keys(dateFilter).length > 0 && { date: dateFilter })
+      ...buildAttendanceDateFilter(dateRange)
     }).populate("employee", "name employeeId department");
 
     // Fetch all leave records
     const leaveRecords = await Leave.find({
       status: "approved",
-      ...(Object.keys(dateFilter).length > 0 && {
-        $or: [
-          { startDate: dateFilter },
-          { endDate: dateFilter }
-        ]
-      })
+      ...buildLeaveDateFilter(dateRange)
     }).populate("employee", "name employeeId department");
 
     // Generate PDF
@@ -134,34 +224,23 @@ function calculateStats(attendanceRecords, leaveRecords) {
   const presentDays = attendanceRecords.filter(r => r.status === "present").length;
   const absentDays = attendanceRecords.filter(r => r.status === "absent").length;
   const halfDays = attendanceRecords.filter(r => r.status === "half-day").length;
-  const leaveDays = leaveRecords.reduce((sum, leave) => {
-    const start = new Date(leave.startDate);
-    const end = new Date(leave.endDate);
-    const days = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
-    return sum + days;
-  }, 0);
+  const leaveDays = leaveRecords.reduce((sum, leave) => sum + calculateLeaveDays(leave), 0);
 
   // Calculate total working hours
-  const totalHours = attendanceRecords.reduce((sum, record) => {
-    if (record.checkIn && record.checkOut) {
-      const hours = (new Date(record.checkOut) - new Date(record.checkIn)) / (1000 * 60 * 60);
-      return sum + hours;
-    }
-    return sum;
-  }, 0);
+  const workedHours = attendanceRecords
+    .map(calculateWorkedHours)
+    .filter(hours => Number.isFinite(hours));
+  const totalHours = workedHours.reduce((sum, hours) => sum + hours, 0);
 
   // Calculate average working hours
-  const avgHours = totalDays > 0 ? (totalHours / totalDays).toFixed(2) : 0;
+  const avgHours = workedHours.length > 0 ? (totalHours / workedHours.length).toFixed(2) : "0.00";
 
   // Calculate late check-ins (after 9:30 AM)
   const lateCheckIns = attendanceRecords.filter(r => {
-    if (r.checkIn) {
-      const checkInTime = new Date(r.checkIn);
-      const hours = checkInTime.getHours();
-      const minutes = checkInTime.getMinutes();
-      return hours > 9 || (hours === 9 && minutes > 30);
-    }
-    return false;
+    if (r.status === "late") return true;
+
+    const checkIn = parseTimeToMinutes(r.checkIn);
+    return checkIn !== null && checkIn > 9 * 60 + 30;
   }).length;
 
   return {
@@ -170,7 +249,7 @@ function calculateStats(attendanceRecords, leaveRecords) {
     absentDays,
     halfDays,
     leaveDays,
-    totalHours: totalHours.toFixed(2),
+    totalHours: Number.isFinite(totalHours) ? totalHours.toFixed(2) : "0.00",
     avgHours,
     lateCheckIns
   };
@@ -188,15 +267,15 @@ function generatePDFContent(doc, user, attendanceRecords, leaveRecords, stats, s
   doc.fontSize(14).font("Helvetica-Bold").text("Employee Information");
   doc.moveDown(0.5);
   doc.fontSize(10).font("Helvetica");
-  doc.text(`Name: ${user.name}`);
-  doc.text(`Employee ID: ${user.employeeId}`);
-  doc.text(`Email: ${user.email}`);
-  doc.text(`Department: ${user.department}`);
-  doc.text(`Phone: ${user.phone}`);
+  doc.text(`Name: ${safeText(user.name)}`);
+  doc.text(`Employee ID: ${safeText(user.employeeId)}`);
+  doc.text(`Email: ${safeText(user.email)}`);
+  doc.text(`Department: ${safeText(user.department)}`);
+  doc.text(`Phone: ${safeText(user.phone)}`);
   
   if (startDate || endDate) {
     doc.moveDown(0.5);
-    doc.text(`Report Period: ${startDate ? new Date(startDate).toLocaleDateString() : "Start"} to ${endDate ? new Date(endDate).toLocaleDateString() : "End"}`);
+    doc.text(`Report Period: ${startDate ? formatDate(startDate) : "Start"} to ${endDate ? formatDate(endDate) : "End"}`);
   }
   
   doc.moveDown(1);
@@ -262,12 +341,13 @@ function generatePDFContent(doc, user, attendanceRecords, leaveRecords, stats, s
         doc.fontSize(8).font("Helvetica");
       }
 
+      const workedHours = calculateWorkedHours(record);
       const rowData = [
-        new Date(record.date).toLocaleDateString(),
-        record.checkIn ? new Date(record.checkIn).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "-",
-        record.checkOut ? new Date(record.checkOut).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "-",
-        record.checkIn && record.checkOut ? `${((new Date(record.checkOut) - new Date(record.checkIn)) / (1000 * 60 * 60)).toFixed(1)}h` : "-",
-        record.status || "-",
+        formatDate(record.date),
+        formatTime(record.checkIn),
+        formatTime(record.checkOut),
+        workedHours === null ? "-" : `${workedHours.toFixed(1)}h`,
+        safeText(record.status),
         record.photo ? "Yes" : "No"
       ];
 
@@ -288,14 +368,14 @@ function generatePDFContent(doc, user, attendanceRecords, leaveRecords, stats, s
 
     doc.fontSize(10).font("Helvetica");
     leaveRecords.forEach((leave, index) => {
-      const start = new Date(leave.startDate).toLocaleDateString();
-      const end = new Date(leave.endDate).toLocaleDateString();
-      const days = Math.ceil((new Date(leave.endDate) - new Date(leave.startDate)) / (1000 * 60 * 60 * 24)) + 1;
+      const start = formatDate(leave.startDate);
+      const end = formatDate(leave.endDate);
+      const days = calculateLeaveDays(leave);
       
-      doc.text(`${index + 1}. ${leave.leaveType} (${days} day${days > 1 ? "s" : ""})`);
+      doc.text(`${index + 1}. ${safeText(leave.leaveType)} (${days} day${days === 1 ? "" : "s"})`);
       doc.fontSize(9);
       doc.text(`   Period: ${start} to ${end}`, { indent: 20 });
-      doc.text(`   Reason: ${leave.reason}`, { indent: 20 });
+      doc.text(`   Reason: ${safeText(leave.reason)}`, { indent: 20 });
       doc.moveDown(0.5);
       doc.fontSize(10);
     });
@@ -318,7 +398,7 @@ function generateAdminPDFContent(doc, employees, attendanceRecords, leaveRecords
   doc.fontSize(10).font("Helvetica").text(`Generated on: ${new Date().toLocaleDateString()}`, { align: "center" });
   
   if (startDate || endDate) {
-    doc.text(`Report Period: ${startDate ? new Date(startDate).toLocaleDateString() : "Start"} to ${endDate ? new Date(endDate).toLocaleDateString() : "End"}`, { align: "center" });
+    doc.text(`Report Period: ${startDate ? formatDate(startDate) : "Start"} to ${endDate ? formatDate(endDate) : "End"}`, { align: "center" });
   }
   
   doc.moveDown(1);
@@ -352,9 +432,9 @@ function generateAdminPDFContent(doc, employees, attendanceRecords, leaveRecords
 
     const empStats = calculateStats(empAttendance, empLeaves);
 
-    doc.fontSize(11).font("Helvetica-Bold").text(`${index + 1}. ${employee.name} (${employee.employeeId})`);
+    doc.fontSize(11).font("Helvetica-Bold").text(`${index + 1}. ${safeText(employee.name)} (${safeText(employee.employeeId)})`);
     doc.fontSize(9).font("Helvetica");
-    doc.text(`   Department: ${employee.department}`);
+    doc.text(`   Department: ${safeText(employee.department)}`);
     doc.text(`   Present: ${empStats.presentDays} | Absent: ${empStats.absentDays} | Half-day: ${empStats.halfDays} | Leaves: ${empStats.leaveDays}`);
     doc.text(`   Total Hours: ${empStats.totalHours} hrs | Avg: ${empStats.avgHours} hrs/day | Late: ${empStats.lateCheckIns}`);
     doc.moveDown(0.8);

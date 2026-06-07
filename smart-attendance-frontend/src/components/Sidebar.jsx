@@ -41,7 +41,7 @@ export default function Sidebar() {
       <button
         type="button"
         onClick={() => setIsOpen((open) => !open)}
-        className="icon-button fixed left-4 top-4 z-50 lg:hidden"
+        className={`icon-button sidebar-toggle fixed z-50 lg:hidden ${isOpen ? "sidebar-toggle-open" : ""}`}
         aria-label="Toggle navigation"
       >
         {isOpen ? <X size={20} /> : <Menu size={20} />}
@@ -82,14 +82,14 @@ export default function Sidebar() {
                   key={item.to}
                   to={item.to}
                   onClick={() => setIsOpen(false)}
-                  className={`flex items-center gap-3 rounded-[8px] px-3 py-3 text-sm font-bold transition ${
+                  className={`flex min-w-0 items-center gap-3 rounded-[8px] px-3 py-3 text-sm font-bold transition ${
                     active
                       ? "bg-[#6d28d9] text-white shadow-[0_12px_28px_rgba(109,40,217,0.24)]"
                       : "text-[#3b3563] hover:bg-white/70"
                   }`}
                 >
-                  <Icon size={18} />
-                  <span>{item.label}</span>
+                  <Icon className="shrink-0" size={18} />
+                  <span className="min-w-0 truncate">{item.label}</span>
                 </Link>
               );
             })}
