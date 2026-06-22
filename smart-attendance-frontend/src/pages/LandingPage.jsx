@@ -46,15 +46,6 @@ const Navbar = () => {
         <div className="flex items-center gap-2 sm:gap-3">
           <button
             type="button"
-            onClick={() => navigate("/qr-display-public")}
-            className="btn btn-secondary px-3 sm:px-4"
-          >
-            <QrCode size={17} />
-            <span className="hidden sm:inline">QR Display</span>
-          </button>
-
-          <button
-            type="button"
             onClick={() => navigate("/login")}
             className="btn btn-secondary px-3 sm:px-4"
           >
