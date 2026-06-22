@@ -4,7 +4,7 @@ import { CalendarDays, ShieldCheck } from "lucide-react";
 import { AuthContext } from "../context/auth-context";
 
 const titles = {
-  dashboard: ["Dashboard", "Live attendance overview and team health"],
+  dashboard: ["Dashboard", "Attendance overview and leave tracking"],
   employees: ["Employees", "Manage people, departments, and access"],
   attendance: ["Attendance", "Review, filter, and correct daily records"],
   leaves: ["Leave Management", "Approve requests with balance context"],
